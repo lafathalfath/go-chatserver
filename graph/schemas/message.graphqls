@@ -1,0 +1,12 @@
+type Message {
+    id: String!
+    content: String!
+    sender: User!
+    roomId: String!
+    createdAt: Time!
+}
+
+input NewMessage {
+    content: String!
+    roomId: String!
+}

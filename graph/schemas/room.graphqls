@@ -1,0 +1,12 @@
+type Room {
+    id: String!
+    type: String!
+    name: String!
+    members: [User!]!
+    createdAt: Time!
+}
+
+input NewRoom {
+    name: String!
+    membersEmail: [String!]!
+}

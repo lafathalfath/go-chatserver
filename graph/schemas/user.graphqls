@@ -1,0 +1,19 @@
+type User {
+  id: String!
+  name: String!
+  email: String!
+  rooms: [Room!]!
+  password: String!
+}
+
+input NewUser {
+  name: String!
+  email: String!
+  password: String!
+  passwordConfirmation: String!
+}
+
+input Login {
+  email: String!
+  password: String!
+}

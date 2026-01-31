@@ -1,0 +1,12 @@
+.env
+.env.stage
+.env.staging
+.env.production
+
+docker-compose.yml
+docker-compose.yml.stage
+docker-compose.yml.staging
+docker-compose.yml.production
+
+go-chatserver
+go-chatserver.exe

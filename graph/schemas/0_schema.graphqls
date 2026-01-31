@@ -1,0 +1,28 @@
+scalar Time
+
+directive @auth on FIELD_DEFINITION
+
+type Query {
+  users: [User!]!
+  user(id: String!): User!
+  me: User! @auth
+
+  myRooms: [Room!]
+  myRoom(id: String!): Room!
+  messages(roomId: String!): [Message!]
+}
+
+type Mutation {
+  createUser(input: NewUser!): User!
+  login(input: Login!): Boolean!
+  logout: Boolean!
+  refreshToken: Boolean!
+
+  sendMessage(input: NewMessage!): Message!
+  createDM(email: String!): Room!
+  createGroup(input: NewRoom!): Room!
+}
+
+type Subscription {
+  messageReceived(roomId: String!): Message! @auth
+}
