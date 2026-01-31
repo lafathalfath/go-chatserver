@@ -8,5 +8,10 @@ docker-compose.yml.stage
 docker-compose.yml.staging
 docker-compose.yml.production
 
+docker-compose.yaml
+docker-compose.yaml.stage
+docker-compose.yaml.staging
+docker-compose.yaml.production
+
 go-chatserver
 go-chatserver.exe
