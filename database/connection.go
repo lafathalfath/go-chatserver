@@ -3,9 +3,11 @@ package database
 import (
 	"context"
 	"fmt"
-	"github.com/lafathalfath/go-chatserver/helpers"
 	"log"
+	"strconv"
 	"time"
+
+	"github.com/lafathalfath/go-chatserver/helpers"
 
 	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/postgres"
@@ -52,10 +54,14 @@ func connectRDB() {
 	var password string
 	address = helpers.Env("REDIS_HOST") + ":" + helpers.Env("REDIS_PORT")
 	password = helpers.Env("REDIS_PASSWORD")
+	db, err := strconv.Atoi(helpers.Env("REDIS_DB"))
+	if err != nil {
+		panic(err)
+	}
 	DBConnection.RDB = redis.NewClient(&redis.Options{
 		Addr:     address,
 		Password: password,
-		DB:       3,
+		DB:       db,
 	})
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()

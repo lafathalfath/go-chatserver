@@ -88,7 +88,6 @@ func (s *messageService) SubscribeMessage(ctx context.Context, roomId string) (<
 			}
 		}
 	}()
-	log.Println("=============", ch)
 
 	return ch, nil
 }
