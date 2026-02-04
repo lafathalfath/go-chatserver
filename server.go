@@ -28,6 +28,14 @@ import (
 
 const defaultPort = "8080"
 
+func protocol() string {
+	isHttps := helpers.Env("ENV") != "development"
+	if isHttps {
+		return "https://"
+	}
+	return "http://"
+}
+
 func main() {
 	database.Connect()
 
@@ -35,10 +43,11 @@ func main() {
 	if port == "" {
 		port = defaultPort
 	}
+	serverAddress := protocol() + helpers.Env("HOST") + ":" + helpers.Env("PORT")
 
 	router := chi.NewRouter()
 	router.Use(cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:5173", "http://localhost:8080"},
+		AllowedOrigins:   []string{helpers.Env("CLIENT_ADDRESS"), serverAddress},
 		AllowCredentials: true,
 		Debug:            true,
 	}).Handler)
@@ -61,7 +70,7 @@ func main() {
 				if origin == "" || origin == r.Header.Get("Host") {
 					return true
 				}
-				return slices.Contains([]string{"http://localhost:5173"}, origin)
+				return slices.Contains([]string{helpers.Env("CLIENT_ADDRESS")}, origin)
 			},
 		},
 		InitFunc: func(
@@ -103,6 +112,6 @@ func main() {
 		),
 	)
 
-	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
+	log.Printf("connect to %s/ for GraphQL playground", serverAddress)
 	log.Fatal(http.ListenAndServe(":"+port, router))
 }
