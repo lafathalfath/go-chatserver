@@ -58,14 +58,22 @@ type ComplexityRoot struct {
 		Sender    func(childComplexity int) int
 	}
 
+	MessageReceipt struct {
+		Status    func(childComplexity int) int
+		UpdatedAt func(childComplexity int) int
+		User      func(childComplexity int) int
+	}
+
 	Mutation struct {
 		CreateDm     func(childComplexity int, email string) int
 		CreateGroup  func(childComplexity int, input models.NewRoom) int
 		CreateUser   func(childComplexity int, input models.NewUser) int
 		Login        func(childComplexity int, input models.Login) int
 		Logout       func(childComplexity int) int
+		MarkRoomRead func(childComplexity int, roomID string, lastMessageID string) int
 		RefreshToken func(childComplexity int) int
 		SendMessage  func(childComplexity int, input models.NewMessage) int
+		Typing       func(childComplexity int, roomID string, isTyping bool) int
 	}
 
 	Query struct {
@@ -85,8 +93,22 @@ type ComplexityRoot struct {
 		Type      func(childComplexity int) int
 	}
 
+	RoomMember struct {
+		LastReadAt        func(childComplexity int) int
+		LastReadMessageID func(childComplexity int) int
+		RoomID            func(childComplexity int) int
+		UserID            func(childComplexity int) int
+	}
+
 	Subscription struct {
 		MessageReceived func(childComplexity int, roomID string) int
+		UserTyping      func(childComplexity int, roomID string) int
+	}
+
+	TypingEvent struct {
+		RoomID func(childComplexity int) int
+		Typing func(childComplexity int) int
+		User   func(childComplexity int) int
 	}
 
 	User struct {
@@ -104,6 +126,8 @@ type MutationResolver interface {
 	Logout(ctx context.Context) (bool, error)
 	RefreshToken(ctx context.Context) (bool, error)
 	SendMessage(ctx context.Context, input models.NewMessage) (*models.Message, error)
+	MarkRoomRead(ctx context.Context, roomID string, lastMessageID string) (bool, error)
+	Typing(ctx context.Context, roomID string, isTyping bool) (bool, error)
 	CreateDm(ctx context.Context, email string) (*models.Room, error)
 	CreateGroup(ctx context.Context, input models.NewRoom) (*models.Room, error)
 }
@@ -117,6 +141,7 @@ type QueryResolver interface {
 }
 type SubscriptionResolver interface {
 	MessageReceived(ctx context.Context, roomID string) (<-chan *models.Message, error)
+	UserTyping(ctx context.Context, roomID string) (<-chan *models.TypingEvent, error)
 }
 
 type executableSchema struct {
@@ -169,6 +194,25 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Message.Sender(childComplexity), true
 
+	case "MessageReceipt.status":
+		if e.complexity.MessageReceipt.Status == nil {
+			break
+		}
+
+		return e.complexity.MessageReceipt.Status(childComplexity), true
+	case "MessageReceipt.updatedAt":
+		if e.complexity.MessageReceipt.UpdatedAt == nil {
+			break
+		}
+
+		return e.complexity.MessageReceipt.UpdatedAt(childComplexity), true
+	case "MessageReceipt.user":
+		if e.complexity.MessageReceipt.User == nil {
+			break
+		}
+
+		return e.complexity.MessageReceipt.User(childComplexity), true
+
 	case "Mutation.createDM":
 		if e.complexity.Mutation.CreateDm == nil {
 			break
@@ -219,6 +263,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.Logout(childComplexity), true
+	case "Mutation.markRoomRead":
+		if e.complexity.Mutation.MarkRoomRead == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_markRoomRead_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.MarkRoomRead(childComplexity, args["roomId"].(string), args["lastMessageId"].(string)), true
 	case "Mutation.refreshToken":
 		if e.complexity.Mutation.RefreshToken == nil {
 			break
@@ -236,6 +291,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.SendMessage(childComplexity, args["input"].(models.NewMessage)), true
+	case "Mutation.typing":
+		if e.complexity.Mutation.Typing == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_typing_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.Typing(childComplexity, args["roomId"].(string), args["isTyping"].(bool)), true
 
 	case "Query.me":
 		if e.complexity.Query.Me == nil {
@@ -320,6 +386,31 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Room.Type(childComplexity), true
 
+	case "RoomMember.lastReadAt":
+		if e.complexity.RoomMember.LastReadAt == nil {
+			break
+		}
+
+		return e.complexity.RoomMember.LastReadAt(childComplexity), true
+	case "RoomMember.lastReadMessageId":
+		if e.complexity.RoomMember.LastReadMessageID == nil {
+			break
+		}
+
+		return e.complexity.RoomMember.LastReadMessageID(childComplexity), true
+	case "RoomMember.roomId":
+		if e.complexity.RoomMember.RoomID == nil {
+			break
+		}
+
+		return e.complexity.RoomMember.RoomID(childComplexity), true
+	case "RoomMember.userId":
+		if e.complexity.RoomMember.UserID == nil {
+			break
+		}
+
+		return e.complexity.RoomMember.UserID(childComplexity), true
+
 	case "Subscription.messageReceived":
 		if e.complexity.Subscription.MessageReceived == nil {
 			break
@@ -331,6 +422,36 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Subscription.MessageReceived(childComplexity, args["roomId"].(string)), true
+	case "Subscription.userTyping":
+		if e.complexity.Subscription.UserTyping == nil {
+			break
+		}
+
+		args, err := ec.field_Subscription_userTyping_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Subscription.UserTyping(childComplexity, args["roomId"].(string)), true
+
+	case "TypingEvent.roomId":
+		if e.complexity.TypingEvent.RoomID == nil {
+			break
+		}
+
+		return e.complexity.TypingEvent.RoomID(childComplexity), true
+	case "TypingEvent.typing":
+		if e.complexity.TypingEvent.Typing == nil {
+			break
+		}
+
+		return e.complexity.TypingEvent.Typing(childComplexity), true
+	case "TypingEvent.user":
+		if e.complexity.TypingEvent.User == nil {
+			break
+		}
+
+		return e.complexity.TypingEvent.User(childComplexity), true
 
 	case "User.email":
 		if e.complexity.User.Email == nil {
@@ -375,6 +496,8 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputNewMessage,
 		ec.unmarshalInputNewRoom,
 		ec.unmarshalInputNewUser,
+		ec.unmarshalInputUpdateLastReadMessage,
+		ec.unmarshalInputUpdateMessageReceipt,
 	)
 	first := true
 
@@ -488,7 +611,7 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 	return introspection.WrapTypeFromDef(ec.Schema(), ec.Schema().Types[name]), nil
 }
 
-//go:embed "schemas/0_schema.graphqls" "schemas/message.graphqls" "schemas/room.graphqls" "schemas/user.graphqls"
+//go:embed "schemas/0_schema.graphqls" "schemas/event.graphqls" "schemas/message.graphqls" "schemas/messageReceipt.graphqls" "schemas/room.graphqls" "schemas/roomMember.graphqls" "schemas/user.graphqls"
 var sourcesFS embed.FS
 
 func sourceData(filename string) string {
@@ -501,8 +624,11 @@ func sourceData(filename string) string {
 
 var sources = []*ast.Source{
 	{Name: "schemas/0_schema.graphqls", Input: sourceData("schemas/0_schema.graphqls"), BuiltIn: false},
+	{Name: "schemas/event.graphqls", Input: sourceData("schemas/event.graphqls"), BuiltIn: false},
 	{Name: "schemas/message.graphqls", Input: sourceData("schemas/message.graphqls"), BuiltIn: false},
+	{Name: "schemas/messageReceipt.graphqls", Input: sourceData("schemas/messageReceipt.graphqls"), BuiltIn: false},
 	{Name: "schemas/room.graphqls", Input: sourceData("schemas/room.graphqls"), BuiltIn: false},
+	{Name: "schemas/roomMember.graphqls", Input: sourceData("schemas/roomMember.graphqls"), BuiltIn: false},
 	{Name: "schemas/user.graphqls", Input: sourceData("schemas/user.graphqls"), BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
@@ -555,6 +681,22 @@ func (ec *executionContext) field_Mutation_login_args(ctx context.Context, rawAr
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_markRoomRead_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "roomId", ec.unmarshalNString2string)
+	if err != nil {
+		return nil, err
+	}
+	args["roomId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "lastMessageId", ec.unmarshalNString2string)
+	if err != nil {
+		return nil, err
+	}
+	args["lastMessageId"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_sendMessage_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -563,6 +705,22 @@ func (ec *executionContext) field_Mutation_sendMessage_args(ctx context.Context,
 		return nil, err
 	}
 	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_typing_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "roomId", ec.unmarshalNString2string)
+	if err != nil {
+		return nil, err
+	}
+	args["roomId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "isTyping", ec.unmarshalNBoolean2bool)
+	if err != nil {
+		return nil, err
+	}
+	args["isTyping"] = arg1
 	return args, nil
 }
 
@@ -611,6 +769,17 @@ func (ec *executionContext) field_Query_user_args(ctx context.Context, rawArgs m
 }
 
 func (ec *executionContext) field_Subscription_messageReceived_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "roomId", ec.unmarshalNString2string)
+	if err != nil {
+		return nil, err
+	}
+	args["roomId"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Subscription_userTyping_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "roomId", ec.unmarshalNString2string)
@@ -830,6 +999,105 @@ func (ec *executionContext) fieldContext_Message_createdAt(_ context.Context, fi
 	return fc, nil
 }
 
+func (ec *executionContext) _MessageReceipt_user(ctx context.Context, field graphql.CollectedField, obj *models.MessageReceipt) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MessageReceipt_user,
+		func(ctx context.Context) (any, error) {
+			return obj.User, nil
+		},
+		nil,
+		ec.marshalNUser2ᚖgithubᚗcomᚋlafathalfathᚋgoᚑchatserverᚋgraphᚋmodelsᚐUser,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MessageReceipt_user(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MessageReceipt",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_User_id(ctx, field)
+			case "name":
+				return ec.fieldContext_User_name(ctx, field)
+			case "email":
+				return ec.fieldContext_User_email(ctx, field)
+			case "rooms":
+				return ec.fieldContext_User_rooms(ctx, field)
+			case "password":
+				return ec.fieldContext_User_password(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MessageReceipt_status(ctx context.Context, field graphql.CollectedField, obj *models.MessageReceipt) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MessageReceipt_status,
+		func(ctx context.Context) (any, error) {
+			return obj.Status, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MessageReceipt_status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MessageReceipt",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MessageReceipt_updatedAt(ctx context.Context, field graphql.CollectedField, obj *models.MessageReceipt) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MessageReceipt_updatedAt,
+		func(ctx context.Context) (any, error) {
+			return obj.UpdatedAt, nil
+		},
+		nil,
+		ec.marshalOTime2timeᚐTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_MessageReceipt_updatedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MessageReceipt",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_createUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -1029,6 +1297,88 @@ func (ec *executionContext) fieldContext_Mutation_sendMessage(ctx context.Contex
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_sendMessage_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_markRoomRead(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_markRoomRead,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().MarkRoomRead(ctx, fc.Args["roomId"].(string), fc.Args["lastMessageId"].(string))
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_markRoomRead(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_markRoomRead_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_typing(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_typing,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().Typing(ctx, fc.Args["roomId"].(string), fc.Args["isTyping"].(bool))
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_typing(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_typing_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -1701,6 +2051,122 @@ func (ec *executionContext) fieldContext_Room_createdAt(_ context.Context, field
 	return fc, nil
 }
 
+func (ec *executionContext) _RoomMember_roomId(ctx context.Context, field graphql.CollectedField, obj *models.RoomMember) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RoomMember_roomId,
+		func(ctx context.Context) (any, error) {
+			return obj.RoomID, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RoomMember_roomId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RoomMember",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RoomMember_userId(ctx context.Context, field graphql.CollectedField, obj *models.RoomMember) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RoomMember_userId,
+		func(ctx context.Context) (any, error) {
+			return obj.UserID, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_RoomMember_userId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RoomMember",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RoomMember_lastReadMessageId(ctx context.Context, field graphql.CollectedField, obj *models.RoomMember) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RoomMember_lastReadMessageId,
+		func(ctx context.Context) (any, error) {
+			return obj.LastReadMessageID, nil
+		},
+		nil,
+		ec.marshalOString2string,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_RoomMember_lastReadMessageId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RoomMember",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RoomMember_lastReadAt(ctx context.Context, field graphql.CollectedField, obj *models.RoomMember) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RoomMember_lastReadAt,
+		func(ctx context.Context) (any, error) {
+			return obj.LastReadAt, nil
+		},
+		nil,
+		ec.marshalOTime2timeᚐTime,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_RoomMember_lastReadAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RoomMember",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Time does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Subscription_messageReceived(ctx context.Context, field graphql.CollectedField) (ret func(ctx context.Context) graphql.Marshaler) {
 	return graphql.ResolveFieldStream(
 		ctx,
@@ -1763,6 +2229,167 @@ func (ec *executionContext) fieldContext_Subscription_messageReceived(ctx contex
 	if fc.Args, err = ec.field_Subscription_messageReceived_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Subscription_userTyping(ctx context.Context, field graphql.CollectedField) (ret func(ctx context.Context) graphql.Marshaler) {
+	return graphql.ResolveFieldStream(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Subscription_userTyping,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Subscription().UserTyping(ctx, fc.Args["roomId"].(string))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				if ec.directives.Auth == nil {
+					var zeroVal *models.TypingEvent
+					return zeroVal, errors.New("directive auth is not implemented")
+				}
+				return ec.directives.Auth(ctx, nil, directive0)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalNTypingEvent2ᚖgithubᚗcomᚋlafathalfathᚋgoᚑchatserverᚋgraphᚋmodelsᚐTypingEvent,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Subscription_userTyping(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Subscription",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "roomId":
+				return ec.fieldContext_TypingEvent_roomId(ctx, field)
+			case "user":
+				return ec.fieldContext_TypingEvent_user(ctx, field)
+			case "typing":
+				return ec.fieldContext_TypingEvent_typing(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TypingEvent", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Subscription_userTyping_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TypingEvent_roomId(ctx context.Context, field graphql.CollectedField, obj *models.TypingEvent) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_TypingEvent_roomId,
+		func(ctx context.Context) (any, error) {
+			return obj.RoomID, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_TypingEvent_roomId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TypingEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TypingEvent_user(ctx context.Context, field graphql.CollectedField, obj *models.TypingEvent) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_TypingEvent_user,
+		func(ctx context.Context) (any, error) {
+			return obj.User, nil
+		},
+		nil,
+		ec.marshalNUser2ᚖgithubᚗcomᚋlafathalfathᚋgoᚑchatserverᚋgraphᚋmodelsᚐUser,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_TypingEvent_user(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TypingEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_User_id(ctx, field)
+			case "name":
+				return ec.fieldContext_User_name(ctx, field)
+			case "email":
+				return ec.fieldContext_User_email(ctx, field)
+			case "rooms":
+				return ec.fieldContext_User_rooms(ctx, field)
+			case "password":
+				return ec.fieldContext_User_password(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TypingEvent_typing(ctx context.Context, field graphql.CollectedField, obj *models.TypingEvent) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_TypingEvent_typing,
+		func(ctx context.Context) (any, error) {
+			return obj.Typing, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_TypingEvent_typing(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TypingEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
 	}
 	return fc, nil
 }
@@ -3520,6 +4147,95 @@ func (ec *executionContext) unmarshalInputNewUser(ctx context.Context, obj any) 
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputUpdateLastReadMessage(ctx context.Context, obj any) (models.UpdateLastReadMessage, error) {
+	var it models.UpdateLastReadMessage
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"roomId", "userId", "lastReadMessageId"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "roomId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("roomId"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RoomID = data
+		case "userId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userId"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UserID = data
+		case "lastReadMessageId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastReadMessageId"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LastReadMessageID = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputUpdateMessageReceipt(ctx context.Context, obj any) (models.UpdateMessageReceipt, error) {
+	var it models.UpdateMessageReceipt
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"messageId", "userId", "status", "updatedAt"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "messageId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("messageId"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MessageID = data
+		case "userId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userId"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UserID = data
+		case "status":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("status"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Status = data
+		case "updatedAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updatedAt"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UpdatedAt = data
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -3564,6 +4280,52 @@ func (ec *executionContext) _Message(ctx context.Context, sel ast.SelectionSet, 
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var messageReceiptImplementors = []string{"MessageReceipt"}
+
+func (ec *executionContext) _MessageReceipt(ctx context.Context, sel ast.SelectionSet, obj *models.MessageReceipt) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, messageReceiptImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("MessageReceipt")
+		case "user":
+			out.Values[i] = ec._MessageReceipt_user(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "status":
+			out.Values[i] = ec._MessageReceipt_status(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updatedAt":
+			out.Values[i] = ec._MessageReceipt_updatedAt(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -3637,6 +4399,20 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "sendMessage":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_sendMessage(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "markRoomRead":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_markRoomRead(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "typing":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_typing(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -3913,6 +4689,54 @@ func (ec *executionContext) _Room(ctx context.Context, sel ast.SelectionSet, obj
 	return out
 }
 
+var roomMemberImplementors = []string{"RoomMember"}
+
+func (ec *executionContext) _RoomMember(ctx context.Context, sel ast.SelectionSet, obj *models.RoomMember) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, roomMemberImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RoomMember")
+		case "roomId":
+			out.Values[i] = ec._RoomMember_roomId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "userId":
+			out.Values[i] = ec._RoomMember_userId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "lastReadMessageId":
+			out.Values[i] = ec._RoomMember_lastReadMessageId(ctx, field, obj)
+		case "lastReadAt":
+			out.Values[i] = ec._RoomMember_lastReadAt(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var subscriptionImplementors = []string{"Subscription"}
 
 func (ec *executionContext) _Subscription(ctx context.Context, sel ast.SelectionSet) func(ctx context.Context) graphql.Marshaler {
@@ -3928,9 +4752,60 @@ func (ec *executionContext) _Subscription(ctx context.Context, sel ast.Selection
 	switch fields[0].Name {
 	case "messageReceived":
 		return ec._Subscription_messageReceived(ctx, fields[0])
+	case "userTyping":
+		return ec._Subscription_userTyping(ctx, fields[0])
 	default:
 		panic("unknown field " + strconv.Quote(fields[0].Name))
 	}
+}
+
+var typingEventImplementors = []string{"TypingEvent"}
+
+func (ec *executionContext) _TypingEvent(ctx context.Context, sel ast.SelectionSet, obj *models.TypingEvent) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, typingEventImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TypingEvent")
+		case "roomId":
+			out.Values[i] = ec._TypingEvent_roomId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "user":
+			out.Values[i] = ec._TypingEvent_user(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "typing":
+			out.Values[i] = ec._TypingEvent_typing(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
 }
 
 var userImplementors = []string{"User"}
@@ -4519,6 +5394,20 @@ func (ec *executionContext) marshalNTime2timeᚐTime(ctx context.Context, sel as
 	return res
 }
 
+func (ec *executionContext) marshalNTypingEvent2githubᚗcomᚋlafathalfathᚋgoᚑchatserverᚋgraphᚋmodelsᚐTypingEvent(ctx context.Context, sel ast.SelectionSet, v models.TypingEvent) graphql.Marshaler {
+	return ec._TypingEvent(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNTypingEvent2ᚖgithubᚗcomᚋlafathalfathᚋgoᚑchatserverᚋgraphᚋmodelsᚐTypingEvent(ctx context.Context, sel ast.SelectionSet, v *models.TypingEvent) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._TypingEvent(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNUser2githubᚗcomᚋlafathalfathᚋgoᚑchatserverᚋgraphᚋmodelsᚐUser(ctx context.Context, sel ast.SelectionSet, v models.User) graphql.Marshaler {
 	return ec._User(ctx, sel, &v)
 }
@@ -4954,6 +5843,18 @@ func (ec *executionContext) marshalORoom2ᚕᚖgithubᚗcomᚋlafathalfathᚋgo�
 	return ret
 }
 
+func (ec *executionContext) unmarshalOString2string(ctx context.Context, v any) (string, error) {
+	res, err := graphql.UnmarshalString(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOString2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
+	_ = sel
+	_ = ctx
+	res := graphql.MarshalString(v)
+	return res
+}
+
 func (ec *executionContext) unmarshalOString2ᚖstring(ctx context.Context, v any) (*string, error) {
 	if v == nil {
 		return nil, nil
@@ -4969,6 +5870,36 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 	_ = sel
 	_ = ctx
 	res := graphql.MarshalString(*v)
+	return res
+}
+
+func (ec *executionContext) unmarshalOTime2timeᚐTime(ctx context.Context, v any) (time.Time, error) {
+	res, err := graphql.UnmarshalTime(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOTime2timeᚐTime(ctx context.Context, sel ast.SelectionSet, v time.Time) graphql.Marshaler {
+	_ = sel
+	_ = ctx
+	res := graphql.MarshalTime(v)
+	return res
+}
+
+func (ec *executionContext) unmarshalOTime2ᚖtimeᚐTime(ctx context.Context, v any) (*time.Time, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalTime(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOTime2ᚖtimeᚐTime(ctx context.Context, sel ast.SelectionSet, v *time.Time) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	_ = sel
+	_ = ctx
+	res := graphql.MarshalTime(*v)
 	return res
 }
 

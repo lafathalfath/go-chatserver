@@ -2,6 +2,10 @@
 
 package models
 
+import (
+	"time"
+)
+
 type Login struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
@@ -31,4 +35,23 @@ type Query struct {
 }
 
 type Subscription struct {
+}
+
+type TypingEvent struct {
+	RoomID string `json:"roomId"`
+	User   *User  `json:"user"`
+	Typing bool   `json:"typing"`
+}
+
+type UpdateLastReadMessage struct {
+	RoomID            string `json:"roomId"`
+	UserID            string `json:"userId"`
+	LastReadMessageID string `json:"lastReadMessageId"`
+}
+
+type UpdateMessageReceipt struct {
+	MessageID string     `json:"messageId"`
+	UserID    string     `json:"userId"`
+	Status    string     `json:"status"`
+	UpdatedAt *time.Time `json:"updatedAt,omitempty"`
 }

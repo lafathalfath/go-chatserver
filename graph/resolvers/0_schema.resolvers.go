@@ -7,6 +7,7 @@ package resolvers
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/lafathalfath/go-chatserver/graph"
 	"github.com/lafathalfath/go-chatserver/graph/models"
@@ -36,6 +37,16 @@ func (r *mutationResolver) RefreshToken(ctx context.Context) (bool, error) {
 // SendMessage is the resolver for the sendMessage field.
 func (r *mutationResolver) SendMessage(ctx context.Context, input models.NewMessage) (*models.Message, error) {
 	return services.MessageServices().SendMessage(ctx, &input)
+}
+
+// MarkRoomRead is the resolver for the markRoomRead field.
+func (r *mutationResolver) MarkRoomRead(ctx context.Context, roomID string, lastMessageID string) (bool, error) {
+	panic(fmt.Errorf("not implemented: MarkRoomRead - markRoomRead"))
+}
+
+// Typing is the resolver for the typing field.
+func (r *mutationResolver) Typing(ctx context.Context, roomID string, isTyping bool) (bool, error) {
+	return services.RoomServices().Typing(ctx, roomID, isTyping)
 }
 
 // CreateDm is the resolver for the createDM field.
@@ -81,6 +92,11 @@ func (r *queryResolver) Messages(ctx context.Context, roomID string) ([]*models.
 // MessageReceived is the resolver for the messageReceived field.
 func (r *subscriptionResolver) MessageReceived(ctx context.Context, roomID string) (<-chan *models.Message, error) {
 	return services.MessageServices().SubscribeMessage(ctx, roomID)
+}
+
+// UserTyping is the resolver for the userTyping field.
+func (r *subscriptionResolver) UserTyping(ctx context.Context, roomID string) (<-chan *models.TypingEvent, error) {
+	return services.RoomServices().SubscribeUserTyping(ctx, roomID)
 }
 
 // Mutation returns graph.MutationResolver implementation.

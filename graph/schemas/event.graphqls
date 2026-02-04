@@ -1,0 +1,5 @@
+type TypingEvent {
+    roomId: String!
+    user: User!
+    typing: Boolean!
+}

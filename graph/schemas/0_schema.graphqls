@@ -19,10 +19,15 @@ type Mutation {
   refreshToken: Boolean!
 
   sendMessage(input: NewMessage!): Message!
+  markRoomRead(roomId: String!, lastMessageId: String!): Boolean!
+  typing(roomId: String!, isTyping: Boolean!): Boolean!
+
   createDM(email: String!): Room!
   createGroup(input: NewRoom!): Room!
 }
 
 type Subscription {
   messageReceived(roomId: String!): Message! @auth
+  # messageRead(roomId: String!): MessageReadEvent! @auth
+  userTyping(roomId: String!): TypingEvent! @auth
 }

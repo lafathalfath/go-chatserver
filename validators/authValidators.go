@@ -11,7 +11,7 @@ import (
 func ValidateLogin(db *gorm.DB, input models.Login) (models.User, error) {
 	var errs []error
 	var user models.User
-	if err := db.Select("email").First(&user, "email = ?", input.Email).Error; err != nil {
+	if err := db.Select("id", "email", "password").First(&user, "email = ?", input.Email).Error; err != nil {
 		errs = append(errs, errors.New("You didn't register yet"))
 	} else {
 		if input.Email == "" {
@@ -20,7 +20,6 @@ func ValidateLogin(db *gorm.DB, input models.Login) (models.User, error) {
 		if input.Password == "" {
 			errs = append(errs, errors.New("Password cannot be null"))
 		} else {
-			db.Select("id", "password").First(&user, "email = ?", input.Email)
 			if err := helpers.ComparePassword(input.Password, user.Password); err != nil {
 				errs = append(errs, errors.New("Password incorrect"))
 			}

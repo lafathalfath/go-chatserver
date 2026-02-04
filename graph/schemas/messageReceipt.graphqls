@@ -1,0 +1,14 @@
+type MessageReceipt {
+	# messageId: String!
+	# userId: String!
+	user: User!
+	status: String!
+	updatedAt: Time
+}
+
+input UpdateMessageReceipt {
+	messageId: String!
+	userId: String!
+	status: String!
+	updatedAt: Time
+}

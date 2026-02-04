@@ -2,7 +2,12 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"log"
+	"time"
+
+	"github.com/lafathalfath/go-chatserver/cache"
 	"github.com/lafathalfath/go-chatserver/database"
 	"github.com/lafathalfath/go-chatserver/graph/models"
 	"github.com/lafathalfath/go-chatserver/helpers"
@@ -15,6 +20,9 @@ type RoomService interface {
 	MyRoom(ctx context.Context, id string) (*models.Room, error)
 	CreateDM(ctx context.Context, email string) (*models.Room, error)
 	CreateGroup(ctx context.Context, input *models.NewRoom) (*models.Room, error)
+
+	Typing(ctx context.Context, roomId string, isTyping bool) (bool, error)
+	SubscribeUserTyping(ctx context.Context, roomId string) (<-chan *models.TypingEvent, error)
 }
 
 type roomService struct {
@@ -24,6 +32,67 @@ type roomService struct {
 func RoomServices() RoomService {
 	conn := &database.DBConnection
 	return &roomService{conn}
+}
+
+func (s *roomService) Typing(ctx context.Context, roomId string, isTyping bool) (bool, error) {
+	userId, ok := helpers.GetUserId(ctx)
+	if !ok {
+		return false, errors.New("Unauthorized")
+	}
+	userCacheKey := "users:"+userId
+	var user models.User
+	if err := cache.Scan(userCacheKey, &user); err != nil {
+		if err := s.DB.Select("id", "name", "email").First(&user, "id = ?", userId).Error; err != nil {
+			return false, err
+		}
+		cache.Set(userCacheKey, user, time.Hour)
+	}
+	typingEvent := models.TypingEvent{
+		RoomID: roomId,
+		User: &user,
+		Typing: isTyping,
+	}
+	publishKey := "room:"+roomId+":usersTyping"
+	payload, err := json.Marshal(typingEvent)
+	if err != nil {
+		return false, err
+	}
+	s.RDB.Publish(ctx, publishKey, payload)
+	return true, nil
+}
+
+func (s *roomService) SubscribeUserTyping(ctx context.Context, roomId string) (<-chan *models.TypingEvent, error) {
+	_, ok := helpers.GetUserId(ctx)
+	if !ok {
+		return nil, errors.New("Unauthorized")
+	}
+
+	ch := make(chan *models.TypingEvent)
+	publishKey := "room:"+roomId+":usersTyping"
+	sub := s.RDB.Subscribe(ctx, publishKey)
+
+	go func()  {
+		defer close(ch)
+		defer sub.Close()
+
+		for {
+			select {
+			case <-ctx.Done():
+				return 
+			case typ, ok := <-sub.Channel():
+				if !ok {
+					return 
+				}
+				var t models.TypingEvent
+				if err := json.Unmarshal([]byte(typ.Payload), &t); err != nil {
+					log.Println("invalid payload:", err)
+					continue
+				}
+				ch <- &t
+			}
+		}
+	}()
+	return ch, nil
 }
 
 func (s *roomService) MyRooms(ctx context.Context) ([]*models.Room, error) {

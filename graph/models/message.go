@@ -11,6 +11,8 @@ type Message struct {
 	Sender    *User      `gorm:"foreignKey:senderId" json:"sender"`
 	RoomID    string    `gorm:"notNull;type:uuid" json:"roomId"`
 	CreatedAt time.Time `json:"created_at"`
+
+	// Receipts []*MessageReceipt `gorm:"foreignKey:messageId" json:"receipts"`
 }
 
 // type NewMessage struct {

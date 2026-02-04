@@ -26,7 +26,7 @@ func Set(cacheKey string, obj any, exp time.Duration) error {
 	return nil
 }
 
-func Clear(cacheKey string) {
+func Del(cacheKey string) {
 	_, err := conn.RDB.Get(conn.RDBCtx, cacheKey).Result()
 	if err != nil {
 		return

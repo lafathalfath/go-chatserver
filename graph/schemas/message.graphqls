@@ -4,6 +4,8 @@ type Message {
     sender: User!
     roomId: String!
     createdAt: Time!
+
+    # receipts: [MessageReceipt!]!
 }
 
 input NewMessage {

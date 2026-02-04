@@ -11,6 +11,8 @@ func autoMigrate (db *gorm.DB) {
 		&models.User{},
 		&models.Room{},
 		&models.Message{},
+		&models.RoomMember{},
+		&models.MessageReceipt{},
 	)
 	if err != nil {
 		panic(err)

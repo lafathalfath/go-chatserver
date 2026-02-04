@@ -1,0 +1,12 @@
+type RoomMember{
+    roomId: String!
+    userId: String!
+    lastReadMessageId: String
+    lastReadAt: Time
+}
+
+input UpdateLastReadMessage {
+    roomId: String!
+    userId: String!
+    lastReadMessageId: String!
+}

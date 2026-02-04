@@ -61,6 +61,8 @@ func (s *authService) Login(ctx context.Context, input *models.Login) (bool, err
 		Path:     "/",
 		MaxAge:   24 * 60 * 60,
 	})
+	cacheKey := "users:" + user.ID
+	cache.Set(cacheKey, user, time.Hour)
 	return true, nil
 }
 
@@ -118,5 +120,8 @@ func (s *authService) Logout(ctx context.Context) (bool, error) {
 	}
 	clear("accessToken", "/")
 	clear("refreshToken", "/")
+	if userId, ok := helpers.GetUserId(ctx); ok {
+		cache.Del("users:"+userId)
+	}
 	return true, nil
 }
